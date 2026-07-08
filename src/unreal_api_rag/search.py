@@ -30,12 +30,28 @@ _CAMEL = re.compile(
 _NONWORD = re.compile(r"[^A-Za-z0-9]+")
 
 
+def _stem(w: str) -> str:
+    """Conservative plural -> singular so 'materials' matches 'material'.
+
+    Deliberately minimal (no aggressive suffix stripping) to protect precision:
+    only the common English plural endings, and never below 4 chars.
+    """
+    if len(w) > 4:
+        if w.endswith("ies"):
+            return w[:-3] + "y"          # properties -> property
+        if w.endswith(("ses", "xes", "zes", "ches", "shes")):
+            return w[:-2]                # meshes -> mesh, boxes -> box
+        if w.endswith("s") and not w.endswith(("ss", "us", "is")):
+            return w[:-1]                # lights -> light, actors -> actor
+    return w
+
+
 def _words(s: Optional[str]) -> List[str]:
     """``'SetActorLocation2'`` / ``'set_actor_location_2'`` -> [set, actor, location, 2]."""
     if not s:
         return []
     spaced = _CAMEL.sub(" ", s)
-    return [w for w in _NONWORD.sub(" ", spaced).lower().split() if w]
+    return [_stem(w) for w in _NONWORD.sub(" ", spaced).lower().split() if w]
 
 
 def _norm(s: Optional[str]) -> str:
