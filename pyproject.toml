@@ -31,9 +31,7 @@ Homepage = "https://github.com/stanlink-games/unreal-python-api-rag"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/unreal_api_rag"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"src/unreal_api_rag/data" = "unreal_api_rag/data"
+artifacts = ["src/unreal_api_rag/data/*.jsonl.gz"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
