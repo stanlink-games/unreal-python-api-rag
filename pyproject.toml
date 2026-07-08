@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "unreal-api-rag"
+version = "0.1.0"
+description = "Unreal Engine Python API as a retrieval / MCP knowledge server — ground any AI agent's UE Python in the real, version-exact API."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "StaNLink Games" }]
+keywords = ["unreal-engine", "mcp", "rag", "llm", "agents", "python-api"]
+dependencies = [
+    "mcp>=1.2.0",
+    "starlette>=0.37",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+# Semantic (embedding) search. Keyword search works WITHOUT these.
+semantic = ["sentence-transformers>=3.0", "numpy>=1.26"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.6"]
+
+[project.scripts]
+unreal-api-rag = "unreal_api_rag.cli:main"
+uapi = "unreal_api_rag.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/stanlink-games/unreal-python-api-rag"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/unreal_api_rag"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/unreal_api_rag/data" = "unreal_api_rag/data"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
