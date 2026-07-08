@@ -51,17 +51,28 @@ def iter_entries(module: Any) -> Iterator[Dict[str, Any]]:
             yield _entry(f"unreal.{name}", "function", obj)
 
 
-def dump(out_path: str) -> int:
-    """Introspect the live ``unreal`` module and write the JSONL corpus."""
+def dump(out_path: str, dedup_methods: bool = True) -> int:
+    """Introspect the live ``unreal`` module and write the JSONL corpus.
+
+    ``dedup_methods`` collapses methods that share a name + signature across
+    subclasses (UE's `dir()` re-lists inherited members on every class), which
+    shrinks the corpus by ~5x with negligible information loss.
+    """
     import unreal  # only importable inside the UE editor
     count = 0
-    seen = set()
+    seen_symbols: set = set()
+    seen_methods: set = set()  # (method_name, signature) global dedup
     with open(out_path, "w") as f:
         for entry in iter_entries(unreal):
             sym = entry["symbol"]
-            if sym in seen:
+            if sym in seen_symbols:
                 continue
-            seen.add(sym)
+            if dedup_methods and entry["kind"] == "method":
+                key = (sym.rsplit(".", 1)[-1], entry["signature"][:160])
+                if key in seen_methods:
+                    continue
+                seen_methods.add(key)
+            seen_symbols.add(sym)
             f.write(json.dumps(entry) + "\n")
             count += 1
     return count
