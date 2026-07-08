@@ -19,6 +19,12 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     m.add_argument("--port", type=int, default=8780)
     m.add_argument("--corpus", default=None, help="Corpus JSONL path (default: bundled / $UAPI_CORPUS).")
 
+    s = sub.add_parser("search", help="Query the bundled corpus from the terminal.")
+    s.add_argument("query", nargs="+", help="Free-text query.")
+    s.add_argument("-k", type=int, default=8, help="Number of results.")
+    s.add_argument("--kind", choices=["class", "method", "function"], default=None)
+    s.add_argument("--corpus", default=None)
+
     args = p.parse_args(argv)
     if args.cmd == "build-corpus":
         from unreal_api_rag.build import dump
@@ -27,6 +33,13 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     elif args.cmd == "mcp":
         from unreal_api_rag.server import run
         run(args.host, args.port, args.corpus)
+    elif args.cmd == "search":
+        from unreal_api_rag.corpus import load_corpus
+        from unreal_api_rag.search import ApiIndex
+        idx = ApiIndex(load_corpus(args.corpus))
+        for r in idx.search(" ".join(args.query), k=args.k, kind=args.kind):
+            sig = (r.get("signature") or "").split("\n")[0][:100]
+            print(f"{r.get('symbol')}  [{r.get('kind')}]\n    {sig}")
 
 
 if __name__ == "__main__":

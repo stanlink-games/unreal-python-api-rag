@@ -30,7 +30,10 @@ def build_server(corpus_path: Optional[str] = None) -> Server:
                              "BEFORE writing UE editor Python so you use real API, not guesses."),
                 inputSchema={"type": "object",
                              "properties": {"query": {"type": "string"},
-                                            "k": {"type": "integer"}},
+                                            "k": {"type": "integer"},
+                                            "kind": {"type": "string",
+                                                     "enum": ["class", "method", "function"],
+                                                     "description": "Optional filter."}},
                              "required": ["query"]},
             ),
             mcp_types.Tool(
@@ -47,8 +50,14 @@ def build_server(corpus_path: Optional[str] = None) -> Server:
     @server.call_tool()
     async def _call_tool(name: str, arguments: dict):
         if name == "search_ue_api":
-            res = index.search(str(arguments.get("query", "")), int(arguments.get("k", 8) or 8))
-            return [mcp_types.TextContent(type="text", text=json.dumps(res, indent=1))]
+            res = index.search(str(arguments.get("query", "")),
+                               int(arguments.get("k", 8) or 8),
+                               kind=arguments.get("kind") or None)
+            # Lean payload: full signature, trimmed doc (use get_symbol for the rest).
+            lean = [{"symbol": r.get("symbol"), "kind": r.get("kind"),
+                     "signature": r.get("signature"),
+                     "doc": (r.get("doc") or "")[:400]} for r in res]
+            return [mcp_types.TextContent(type="text", text=json.dumps(lean, indent=1))]
         if name == "get_symbol":
             res = index.get_symbol(str(arguments.get("name", "")))
             return [mcp_types.TextContent(type="text", text=json.dumps(res))]
